@@ -28,6 +28,12 @@ func main() {
 	defer resp.Body.Close()
 	log.Println(string(body))
 
+	// var result map[string]interface{}
+
+	// json.NewDecoder(resp.Body).Decode(&result)
+
+	// log.Println(result)
+	// log.Println(result["data"])
 	// https: //api.telegram.org/bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/getMe
 
 }
