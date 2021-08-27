@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	teleToken := os.Getenv("teleToken")
-	url := "https://api.telegram.org/bot" + teleToken + "/getUpdates" + "?timeout=300"
+	url := "https://api.telegram.org/bot" + teleToken + "/getUpdates?timeout=300"
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalln(err)
@@ -28,6 +29,9 @@ func main() {
 	defer resp.Body.Close()
 	log.Println(string(body))
 
+	if err := json.NewDecoder(resp.Body).Decode(&cResp); err != nil {
+		log.Fatal("ooopsss! an error occurred, please try again")
+	}
 	// var result map[string]interface{}
 
 	// json.NewDecoder(resp.Body).Decode(&result)
