@@ -8,61 +8,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"telegobot/keyboard"
 
 	"github.com/joho/godotenv"
 )
-
-type butt struct {
-	Text          string `json:"text"`
-	Callback_data string `json:"callback_data"`
-}
-
-type keyboardButton struct {
-	Text            string `json:"text"`
-	Request_contact bool   `json:"request_contact"`
-}
-
-type inli struct {
-	ButtonType        [][]keyboardButton `json:"keyboard"`
-	Resize_keyboard   bool               `json:"resize_keyboard"`
-	One_time_keyboard bool               `json:"one_time_keyboard"`
-	// ButtonData []struct {
-	// 	Text            string `json:"text"`
-	// 	handlerFunction string `json:"callback_data"`
-	// }
-}
-
-type inlineKeyboard struct {
-	ButtonType [][]butt `json:"inline_keyboard"`
-	// ButtonData []struct {
-	// 	Text            string `json:"text"`
-	// 	handlerFunction string `json:"callback_data"`
-	// }
-}
-
-// func addNewInlineKey(url string) {
-
-// }
-
-type incomingMessage struct {
-	Ok     bool `json:"ok"`
-	Result []struct {
-		Update_id int `json:"update_id"`
-		Message   struct {
-			Message_id int `json:"message_id"`
-			From       struct {
-				Id int `json:"id"`
-			} `json:"from"`
-			Text    string `json:"text"`
-			Contact struct {
-				Phone_number string `json:"phone_number"`
-			} `json:"contact"`
-		} `json:"message"`
-		HandlerFunction struct {
-			Name string `json:"data"`
-		} `json:"callback_query"`
-	} `json:"result"`
-}
 
 func main() {
 
@@ -90,7 +39,7 @@ func main() {
 		defer resp.Body.Close()
 		log.Println(string(body))
 
-		var incomingMessages incomingMessage
+		var incomingMessages keyboard.IncomingMessage
 
 		json.Unmarshal([]byte(body), &incomingMessages)
 
@@ -155,35 +104,3 @@ func main() {
 	}
 
 }
-
-// &reply_markup= ""inline_keyboard"": [
-// 	|		[{
-// 	|                ""text"": ""Обычная кнопка"",
-// 	|                ""callback_data"": ""ОтветНаСообщение1""
-// 	|            }
-// 	|        ],
-// if strings.Contains(messageText, "переводы") {
-// 	messageText = "Да, слышали что - то о переводах"
-// }
-// switch messageText {
-
-// case "Привет":
-// 	messageText = "Ну привет!"
-// case "Как дела?":
-// 	messageText = "Хорошо, а у тебя?"
-// case "тоже":
-// 	messageText = "ну и отлично?"
-// case strings.Contains(messageText, "переводы"):
-// 	messageText = "ну и отлично?"
-// }
-// АдресЗапроса =
-// 	"bot"
-// +МойToken
-// +"/sendMessage"
-// +"?chat_id="
-// +ЧатID
-// +"&text="
-// +ТекстСообщения
-// log.Println(result)
-// log.Println(result["data"])
-// https: //api.telegram.org/bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11/getMe
