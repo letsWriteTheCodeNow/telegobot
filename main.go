@@ -71,17 +71,19 @@ func main() {
 
 				messageText = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
 
-				var inK inli
-				var keyboardButtonGetPhone keyboardButton
-				var keyboardButtonGetPhoneArray []keyboardButton
+				var keyboardButton keyboard.KeyboardButton
+				var keyboardButtonArray []keyboard.KeyboardButton
 
-				keyboardButtonGetPhone.Text = "Отправить номер"
-				keyboardButtonGetPhone.Request_contact = true
-				keyboardButtonGetPhoneArray = append(keyboardButtonGetPhoneArray, keyboardButtonGetPhone)
-				inK.ButtonType = append(inK.ButtonType, keyboardButtonGetPhoneArray)
-				inK.Resize_keyboard = true
-				inK.One_time_keyboard = true
-				json_data, err := json.Marshal(inK)
+				keyboardButton.Text = "Отправить номер"
+				keyboardButton.Request_contact = true
+
+				keyboardButtonArray = append(keyboardButtonArray, keyboardButton)
+
+				var keyboardStruct keyboard.Keyboard
+				keyboardStruct.KeyboardButtonArray = append(keyboardStruct.KeyboardButtonArray, keyboardButtonArray)
+				keyboardStruct.Resize_keyboard = true
+				keyboardStruct.One_time_keyboard = true
+				json_data, err := json.Marshal(keyboardStruct)
 				if err != nil {
 					log.Fatalln(err)
 				}
