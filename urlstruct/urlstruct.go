@@ -2,26 +2,16 @@ package urlstruct
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
+	"telegobot/keyboard"
+	"time"
 )
 
-// import (
-// 	"encoding/json"
-// 	"fmt"
-// 	"io/ioutil"
-// 	"log"
-// 	"net/http"
-// 	"strconv"
-// 	"telegobot/keyboard"
-// )
-
-// const (
-// 	host      = "https://api.telegram.org/bot"
-// 	getUpdate = "/getUpdates" //?timeout=15
-// )
 type IncomingMessage struct {
 	Ok     bool `json:"ok"`
 	Result []struct {
@@ -35,11 +25,31 @@ type IncomingMessage struct {
 			Contact struct {
 				Phone_number string `json:"phone_number"`
 			} `json:"contact"`
+			Entities []struct {
+				Type string `json:"type"`
+			} `json:"entities"`
 		} `json:"message"`
 		HandlerFunction struct {
 			Name string `json:"data"`
 		} `json:"callback_query"`
+		Type string
 	} `json:"result"`
+}
+
+type Message struct {
+	ChatID      int
+	Text        string
+	ReplyMarkup string
+}
+
+func (m *Message) AddKeyboard(k keyboard.Keyboard) {
+
+	json_data, err := json.Marshal(k)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	m.ReplyMarkup = string(json_data)
+
 }
 
 type BotApi struct {
@@ -51,24 +61,61 @@ type BotApi struct {
 	ReplyMarkup        string
 	TeleToken          string
 	SendMessageAddress string
-	Client             *http.Client
+	Client             http.Client
+	FuncStart          reflect.Value
 }
 
 func (u *BotApi) ByDefault() {
 	u.Host = "https://api.telegram.org/bot"
-	u.GetApdateAddress = "/getUpdates"
-	u.SendMessageAddress = "/sendMessage"
+	u.GetApdateAddress = "/getUpdates?timeout="
+	u.SendMessageAddress = "/sendMessage?chat_id="
 	u.Timeout = 120
 	u.LastMessage = 0
 	u.Offset = 0
-	u.Client.Timeout = 120
+	u.Client.Timeout = 120 * time.Second
 }
+
+func (ba *BotApi) RunLongPolling() {
+
+	for true {
+
+		incomingMessages := ba.GetUpdates()
+
+		for imess, message := range incomingMessages.Result {
+			for _, entity := range message.Message.Entities {
+				if entity.Type == "bot_command" {
+					incomingMessages.Result[imess].Type = "Command"
+				}
+			}
+			if message.Message.Contact.Phone_number != "" {
+				incomingMessages.Result[imess].Type = "Contact"
+			}
+			ba.LastMessage = message.Update_id + 1
+		}
+
+		inValue := make([]reflect.Value, 2)
+		inValue[0] = reflect.ValueOf(incomingMessages)
+		inValue[1] = reflect.ValueOf(*ba)
+		ba.FuncStart.Call(inValue)
+
+	}
+}
+
+func (ba *BotApi) SetStartFunction(startFunction func(incomingMessages IncomingMessage, b BotApi)) {
+
+	ba.FuncStart = reflect.ValueOf(startFunction)
+
+}
+
+// func (ba *BotApi) SendKeyboardButton(startFunction func(incomingMessages IncomingMessage, b BotApi)) {
+// 	ba.
+// }
 
 func (u *BotApi) GetUpdates() IncomingMessage {
 
-	urlGetUpdates := u.Host + u.TeleToken + u.GetApdateAddress + "?timeout=" + strconv.Itoa(u.Timeout)
+	urlGetUpdates := u.Host + u.TeleToken + u.GetApdateAddress + strconv.Itoa(u.Timeout)
 	if u.LastMessage != 0 {
-		urlGetUpdates = urlGetUpdates + "&offset=" + strconv.Itoa(u.LastMessage+1)
+		urlGetUpdates = urlGetUpdates + "&offset=" + strconv.Itoa(u.LastMessage)
 	}
 
 	resp, err := u.Client.Get(urlGetUpdates)
@@ -86,9 +133,66 @@ func (u *BotApi) GetUpdates() IncomingMessage {
 	var incomingMessages IncomingMessage
 	json.Unmarshal([]byte(body), &incomingMessages)
 
+	fmt.Println(string(body))
 	return incomingMessages
 
 }
+
+func (ba *BotApi) SendMessage(m Message) {
+
+	urlSendMessage := ba.Host + ba.TeleToken + ba.SendMessageAddress + strconv.Itoa(m.ChatID)
+	if m.Text != "" {
+		urlSendMessage = urlSendMessage + "&text=" + m.Text
+	}
+	if m.ReplyMarkup != "" {
+		urlSendMessage = urlSendMessage + "&reply_markup=" + m.ReplyMarkup
+	}
+	resp, err := ba.Client.Get(urlSendMessage)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+	// urlSendMessage := "https://api.telegram.org/bot" + teleToken + "/sendMessage?chat_id=" + strconv.Itoa(message.Message.From.Id) + "&text=" + messageText + replyMarkupText
+	// // if ba.ReplyMarkup != "" {
+	// // 	urlSendMessage = urlSendMessage + "&reply_markup=" +
+	// // }
+
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// body, err := ioutil.ReadAll(resp.Body)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+
+	// defer resp.Body.Close()
+
+	// var newKeyboard keyboard.Keyboard
+	// newKeyboard.ByDefault()
+	// messageText = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
+	// newKeyboard.AddButtonRequestContact(messageText)
+	// urlSendMessage := "https://api.telegram.org/bot" + teleToken + "/sendMessage?chat_id=" + strconv.Itoa(message.Message.From.Id) + "&text=" + messageText + replyMarkupText
+	// // 			_, err := http.Get(urlSendMessage)
+	// replyMarkupText = "&reply_markup=" + string(json_data)
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// var incomingMessages IncomingMessage
+	// json.Unmarshal([]byte(body), &incomingMessages)
+
+	// return incomingMessages
+}
+
+// messageText := message.Message.Text
+// if messageText == "/start" {
+
+// 	var newKeyboard keyboard.Keyboard
+// 	newKeyboard.ByDefault()
+// 	messageText = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
+// 	newKeyboard.AddButtonRequestContact(messageText)
+// }
 
 // func GetURLStructByDefault() urlSrtuct {
 

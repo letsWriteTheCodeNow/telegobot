@@ -32,13 +32,7 @@ func (k *Keyboard) AddButtonRequestContact(text string) {
 	newKeyboardButtonArray = append(newKeyboardButtonArray, newKeyboardButton)
 
 	k.KeyboardButtonArray = append(k.KeyboardButtonArray, newKeyboardButtonArray)
-	// 		var keyboardButton keyboard.KeyboardButton
-	// 		var keyboardButtonArray []keyboard.KeyboardButton
 
-	// 		keyboardButton.Text = "Отправить номер"
-	// 		keyboardButton.Request_contact = true
-
-	// 		keyboardButtonArray = append(keyboardButtonArray, keyboardButton)
 }
 
 type InlineKeyboard struct {
