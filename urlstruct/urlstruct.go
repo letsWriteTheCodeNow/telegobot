@@ -107,10 +107,6 @@ func (ba *BotApi) SetStartFunction(startFunction func(incomingMessages IncomingM
 
 }
 
-// func (ba *BotApi) SendKeyboardButton(startFunction func(incomingMessages IncomingMessage, b BotApi)) {
-// 	ba.
-// }
-
 func (u *BotApi) GetUpdates() IncomingMessage {
 
 	urlGetUpdates := u.Host + u.TeleToken + u.GetApdateAddress + strconv.Itoa(u.Timeout)
@@ -153,38 +149,59 @@ func (ba *BotApi) SendMessage(m Message) {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	fmt.Println(string(body))
-	// urlSendMessage := "https://api.telegram.org/bot" + teleToken + "/sendMessage?chat_id=" + strconv.Itoa(message.Message.From.Id) + "&text=" + messageText + replyMarkupText
-	// // if ba.ReplyMarkup != "" {
-	// // 	urlSendMessage = urlSendMessage + "&reply_markup=" +
-	// // }
 
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-
-	// body, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-
-	// defer resp.Body.Close()
-
-	// var newKeyboard keyboard.Keyboard
-	// newKeyboard.ByDefault()
-	// messageText = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
-	// newKeyboard.AddButtonRequestContact(messageText)
-	// urlSendMessage := "https://api.telegram.org/bot" + teleToken + "/sendMessage?chat_id=" + strconv.Itoa(message.Message.From.Id) + "&text=" + messageText + replyMarkupText
-	// // 			_, err := http.Get(urlSendMessage)
-	// replyMarkupText = "&reply_markup=" + string(json_data)
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// var incomingMessages IncomingMessage
-	// json.Unmarshal([]byte(body), &incomingMessages)
-
-	// return incomingMessages
 }
 
+type reqEmployee struct {
+	Status string `json:"Status"`
+	Data   struct {
+		IO        string `json:"FIO"`
+		Employees []struct {
+			GUIDEmployee     string `json:"GUIDEmployee"`
+			TypeOfEmployment string `json:"TypeOfEmployment"`
+		} `json:"ArrayOfEmployees"`
+	} `json:"Data"`
+}
+
+func GetЕmployeesData(phoneNumber string, userID string) {
+
+	client := http.Client{}
+	req, err := http.NewRequest("GET", "http://buh.misis.ru/zkgu/hs/ExchangeBot/GetЕmployeesData", nil)
+	if err != nil {
+		//Handle Error
+	}
+
+	req.Header = http.Header{
+		"Content-Type":  []string{"application/json"},
+		"Authorization": []string{"Basic ZXhjYm90OkRvMmt5ZmFi"},
+		"Phonenumber":   []string{phoneNumber},
+		"userid":        []string{userID},
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	var rEm reqEmployee
+	json.Unmarshal([]byte(body), &rEm)
+
+	println(string(body))
+	defer res.Body.Close()
+}
+
+// def post(num, userid):
+//     headers = {'Authorization': 'Basic ZXhjYm90OkRvMmt5ZmFi', 'Phonenumber': num, 'userid': userid}
+//     response = requests.get('http://buh.misis.ru/zkgu/hs/ExchangeBot/GetЕmployeesData', headers=headers)
+//     response.encoding = "utf-8"
+//     gon = response.json()
+//     return gon
+// #http://buh.misis.ru/zkgu/hs/ExchangeBot/GetЕmployeesData
+// #http://10.10.0.249/YRZKGU/hs/ExchangeBot/GetЕmployeesData
 // messageText := message.Message.Text
 // if messageText == "/start" {
 
