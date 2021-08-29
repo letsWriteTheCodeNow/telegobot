@@ -1,25 +1,5 @@
 package keyboard
 
-type IncomingMessage struct {
-	Ok     bool `json:"ok"`
-	Result []struct {
-		Update_id int `json:"update_id"`
-		Message   struct {
-			Message_id int `json:"message_id"`
-			From       struct {
-				Id int `json:"id"`
-			} `json:"from"`
-			Text    string `json:"text"`
-			Contact struct {
-				Phone_number string `json:"phone_number"`
-			} `json:"contact"`
-		} `json:"message"`
-		HandlerFunction struct {
-			Name string `json:"data"`
-		} `json:"callback_query"`
-	} `json:"result"`
-}
-
 type KeyboardButton struct {
 	Text            string `json:"text"`
 	Request_contact bool   `json:"request_contact"`
@@ -36,6 +16,35 @@ type Keyboard struct {
 	One_time_keyboard   bool               `json:"one_time_keyboard"`
 }
 
+func (k *Keyboard) ByDefault() {
+	k.Resize_keyboard = true
+	k.One_time_keyboard = true
+}
+
+func (k *Keyboard) AddButtonRequestContact(text string) {
+
+	var newKeyboardButton KeyboardButton
+	var newKeyboardButtonArray []KeyboardButton
+
+	newKeyboardButton.Text = text
+	newKeyboardButton.Request_contact = true
+
+	newKeyboardButtonArray = append(newKeyboardButtonArray, newKeyboardButton)
+
+	k.KeyboardButtonArray = append(k.KeyboardButtonArray, newKeyboardButtonArray)
+	// 		var keyboardButton keyboard.KeyboardButton
+	// 		var keyboardButtonArray []keyboard.KeyboardButton
+
+	// 		keyboardButton.Text = "Отправить номер"
+	// 		keyboardButton.Request_contact = true
+
+	// 		keyboardButtonArray = append(keyboardButtonArray, keyboardButton)
+}
+
 type InlineKeyboard struct {
 	ButtonType [][]InlineKeyboardButton `json:"inline_keyboard"`
+}
+
+func AddKeyboardButton(text string, request_contact bool) {
+
 }
