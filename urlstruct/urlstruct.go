@@ -82,26 +82,40 @@ func (ba *BotApi) RunLongPolling() {
 		incomingMessages := ba.GetUpdates()
 
 		for imess, message := range incomingMessages.Result {
+			messageData := ""
 			for _, entity := range message.Message.Entities {
 				if entity.Type == "bot_command" {
 					incomingMessages.Result[imess].Type = "Command"
+					messageData = message.Message.Text
 				}
 			}
 			if message.Message.Contact.Phone_number != "" {
 				incomingMessages.Result[imess].Type = "Contact"
+				messageData = message.Message.Contact.Phone_number
 			}
-			ba.LastMessage = message.Update_id + 1
-		}
+			if message.HandlerFunction.Name != "" {
+				incomingMessages.Result[imess].Type = "CallbackData"
+				messageData = message.HandlerFunction.Name
+			}
+			if messageData == "" {
+				incomingMessages.Result[imess].Type = "Text"
+				messageData = message.Message.Text
+			}
 
-		inValue := make([]reflect.Value, 2)
-		inValue[0] = reflect.ValueOf(incomingMessages)
-		inValue[1] = reflect.ValueOf(*ba)
-		ba.FuncStart.Call(inValue)
+			ba.LastMessage = message.Update_id + 1
+
+			inValue := make([]reflect.Value, 4)
+			inValue[0] = reflect.ValueOf(incomingMessages.Result[imess].Type)
+			inValue[1] = reflect.ValueOf(messageData)
+			inValue[2] = reflect.ValueOf(message.Message.From.Id)
+			inValue[3] = reflect.ValueOf(*ba)
+			ba.FuncStart.Call(inValue)
+		}
 
 	}
 }
 
-func (ba *BotApi) SetStartFunction(startFunction func(incomingMessages IncomingMessage, b BotApi)) {
+func (ba *BotApi) SetStartFunction(startFunction func(t string, d string, f int, b BotApi)) {
 
 	ba.FuncStart = reflect.ValueOf(startFunction)
 
@@ -155,7 +169,7 @@ func (ba *BotApi) SendMessage(m Message) {
 type reqEmployee struct {
 	Status string `json:"Status"`
 	Data   struct {
-		IO        string `json:"FIO"`
+		IO        string `json:"IO"`
 		Employees []struct {
 			GUIDEmployee     string `json:"GUIDEmployee"`
 			TypeOfEmployment string `json:"TypeOfEmployment"`
@@ -163,7 +177,7 @@ type reqEmployee struct {
 	} `json:"Data"`
 }
 
-func GetЕmployeesData(phoneNumber string, userID string) {
+func GetЕmployeesData(phoneNumber string, userID string) reqEmployee {
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "http://buh.misis.ru/zkgu/hs/ExchangeBot/GetЕmployeesData", nil)
@@ -184,6 +198,7 @@ func GetЕmployeesData(phoneNumber string, userID string) {
 	}
 
 	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -191,7 +206,9 @@ func GetЕmployeesData(phoneNumber string, userID string) {
 	json.Unmarshal([]byte(body), &rEm)
 
 	println(string(body))
-	defer res.Body.Close()
+
+	return rEm
+
 }
 
 // def post(num, userid):
