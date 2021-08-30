@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"telegobot/cache"
 	"telegobot/keyboard"
 	"time"
 )
@@ -31,6 +32,9 @@ type IncomingMessage struct {
 		} `json:"message"`
 		HandlerFunction struct {
 			Name string `json:"data"`
+			From struct {
+				Id int `json:"id"`
+			} `json:"from"`
 		} `json:"callback_query"`
 		Type string
 	} `json:"result"`
@@ -63,16 +67,19 @@ type BotApi struct {
 	SendMessageAddress string
 	Client             http.Client
 	FuncStart          reflect.Value
+	Cache              *cache.Cache
 }
 
-func (u *BotApi) ByDefault() {
-	u.Host = "https://api.telegram.org/bot"
-	u.GetApdateAddress = "/getUpdates?timeout="
-	u.SendMessageAddress = "/sendMessage?chat_id="
-	u.Timeout = 120
-	u.LastMessage = 0
-	u.Offset = 0
-	u.Client.Timeout = 120 * time.Second
+func (ba *BotApi) ByDefault() {
+	ba.Host = "https://api.telegram.org/bot"
+	ba.GetApdateAddress = "/getUpdates?timeout="
+	ba.SendMessageAddress = "/sendMessage?chat_id="
+	ba.Timeout = 120
+	ba.LastMessage = 0
+	ba.Offset = 0
+	ba.Client.Timeout = 2 * time.Minute
+	ba.Cache = cache.New(5*time.Minute, 10*time.Minute)
+	ba.Cache.StartGarbageCollection()
 }
 
 func (ba *BotApi) RunLongPolling() {
@@ -83,19 +90,23 @@ func (ba *BotApi) RunLongPolling() {
 
 		for imess, message := range incomingMessages.Result {
 			messageData := ""
+			fromid := 0
 			for _, entity := range message.Message.Entities {
 				if entity.Type == "bot_command" {
 					incomingMessages.Result[imess].Type = "Command"
 					messageData = message.Message.Text
+					fromid = message.Message.From.Id
 				}
 			}
 			if message.Message.Contact.Phone_number != "" {
 				incomingMessages.Result[imess].Type = "Contact"
 				messageData = message.Message.Contact.Phone_number
+				fromid = message.Message.From.Id
 			}
 			if message.HandlerFunction.Name != "" {
 				incomingMessages.Result[imess].Type = "CallbackData"
 				messageData = message.HandlerFunction.Name
+				fromid = message.HandlerFunction.From.Id
 			}
 			if messageData == "" {
 				incomingMessages.Result[imess].Type = "Text"
@@ -107,7 +118,7 @@ func (ba *BotApi) RunLongPolling() {
 			inValue := make([]reflect.Value, 4)
 			inValue[0] = reflect.ValueOf(incomingMessages.Result[imess].Type)
 			inValue[1] = reflect.ValueOf(messageData)
-			inValue[2] = reflect.ValueOf(message.Message.From.Id)
+			inValue[2] = reflect.ValueOf(fromid)
 			inValue[3] = reflect.ValueOf(*ba)
 			ba.FuncStart.Call(inValue)
 		}
@@ -166,7 +177,7 @@ func (ba *BotApi) SendMessage(m Message) {
 
 }
 
-type reqEmployee struct {
+type ReqEmployee struct {
 	Status string `json:"Status"`
 	Data   struct {
 		IO        string `json:"IO"`
@@ -174,10 +185,15 @@ type reqEmployee struct {
 			GUIDEmployee     string `json:"GUIDEmployee"`
 			TypeOfEmployment string `json:"TypeOfEmployment"`
 		} `json:"ArrayOfEmployees"`
+		OrderedDocuments []struct {
+			ВидСправки      string `json:"ВидСправки"`
+			НалоговыйПериод string `json:"НалоговыйПериод"`
+		} `json:"OrderedDocuments"`
 	} `json:"Data"`
+	Certificate string
 }
 
-func GetЕmployeesData(phoneNumber string, userID string) reqEmployee {
+func GetЕmployeesData(phoneNumber string, userID string) ReqEmployee {
 
 	client := http.Client{}
 	req, err := http.NewRequest("GET", "http://buh.misis.ru/zkgu/hs/ExchangeBot/GetЕmployeesData", nil)
@@ -202,13 +218,19 @@ func GetЕmployeesData(phoneNumber string, userID string) reqEmployee {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	var rEm reqEmployee
+	var rEm ReqEmployee
 	json.Unmarshal([]byte(body), &rEm)
 
 	println(string(body))
 
 	return rEm
 
+}
+
+type OutgoingMessage struct {
+	GUIDСправки, НомерСправки, Тип, GUIDСотрудника, Комментарий, ФИОРебенка string
+	Количество, ПериодСправкиДляПосольства, РасчетныйПериод                 int
+	ДатаРожденияРебенка, ДатаЗаказа                                         time.Time
 }
 
 // def post(num, userid):
