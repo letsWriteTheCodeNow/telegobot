@@ -1,4 +1,4 @@
-package botapi
+package telegobot
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-var pointbot *Bot
+var pointbot *TeleGoBot
 
 type Message struct {
 	Message_id int `json:"message_id"`
@@ -42,29 +42,29 @@ type IncomingMessages struct {
 	} `json:"result"`
 }
 
-type Bot struct {
+type TeleGoBot struct {
 	LastMessage int
 	TeleToken   string
 	FuncStart   reflect.Value
 	Client      http.Client
 }
 
-func NewBot(timeoutinseconds int) *Bot {
+func NewBot(timeoutinseconds int) *TeleGoBot {
 
-	bot := Bot{}
+	bot := TeleGoBot{}
 	bot.Client.Timeout, _ = time.ParseDuration(fmt.Sprintf("%ds", timeoutinseconds))
 	// bot.DefaultText = "default text"
 	pointbot = &bot
 	return &bot
 }
 
-func (bot *Bot) SetStartFunction(startFunction func(t string, d string, uI int, mI int)) {
+func (bot *TeleGoBot) SetStartFunction(startFunction func(t string, d string, uI int, mI int)) {
 
 	bot.FuncStart = reflect.ValueOf(startFunction)
 
 }
 
-func (bot *Bot) RunLongPolling() {
+func (bot *TeleGoBot) RunLongPolling() {
 
 	for true {
 
@@ -113,7 +113,7 @@ func processMessage(message Message) {
 
 }
 
-func (bot *Bot) GetUpdates() IncomingMessages {
+func (bot *TeleGoBot) GetUpdates() IncomingMessages {
 
 	urlGetUpdates := fmt.Sprintf("https://api.telegram.org/bot%s/getUpdates?timeout=%g&offset=%s", bot.TeleToken, bot.Client.Timeout.Seconds(), strconv.Itoa(bot.LastMessage))
 
