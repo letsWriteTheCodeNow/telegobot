@@ -1,3 +1,3 @@
-module github.com/letsWriteTheCodeNow/telegobot
+module github.com/letswritethecodenow/telegobot
 
 go 1.17
