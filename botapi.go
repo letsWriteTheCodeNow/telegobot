@@ -1,4 +1,4 @@
-package github.com/letsWriteTheCodeNow/telegobot
+package telegobot
 
 import (
 	"encoding/json"
